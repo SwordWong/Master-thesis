@@ -1,0 +1,14 @@
+*.aux
+*.blg
+*.ind
+*.idx
+*.bbl
+*.pdf
+*.out
+*.log
+*.toc
+*.lot
+*.lof
+*.ilg
+*.vscodeLog
+ZJUthesis.synctex.gz(busy)
