@@ -546,7 +546,7 @@ includehead, includefoot]{geometry}
 \CTEXsetup[name={第,章}]{chapter}
 \CTEXsetup[number={\arabic{chapter}}]{chapter}
 \CTEXsetup[format={\centering}]{chapter}
-\CTEXsetup[nameformat={\bfseries\zihao{-3}}]{chapter}
+\CTEXsetup[nameformat={\bfseries\fangsong\zihao{-3}}]{chapter}
 \CTEXsetup[titleformat={\bfseries\fangsong\zihao{-3}}]{chapter}
 \CTEXsetup[format={\noindent}]{section}
 \CTEXsetup[nameformat={\bfseries\zihao{4}}]{section}
