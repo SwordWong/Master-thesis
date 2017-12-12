@@ -1,0 +1,1 @@
+texcount -sub -inc paper.tex 
