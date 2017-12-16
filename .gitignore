@@ -12,3 +12,4 @@
 *.ilg
 *.vscodeLog
 ZJUthesis.synctex.gz(busy)
+.vscode/settings.json
