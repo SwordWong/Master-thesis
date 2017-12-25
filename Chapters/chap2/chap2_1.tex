@@ -25,7 +25,7 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 主流主动测距技术有飞行时间(ToF,Time-of-Flight)、
 三角测距(Triangulation)和结构光(Structured light)。本文使用的深度相机就是基于主动测距拘束。
 \subsection{飞行时间测距}
-飞行时间测距，又称为激光雷达(LiDAR)测距法。Microsoft的Kinect二代采用的就是飞行时间测距技术。
+飞行时间测距，又称为激光雷达(LiDAR)测距法。Microsoft的Kinect二代(图\ref{kinect_v1_v2}右)采用的就是飞行时间测距技术。
 激光发射器会将激光脉冲投射到物体表面，相应的传感器会接收物体表面反射的激光信号，
 控制器就会根据信号传播所消耗的时间计算出相应监测点和传感器的距离。但由于光速(\(299792458 m/s\))非常快，
 直接测量飞行时间是不现实的。例如测量1m的距离，飞行时间为\(1/299792458 \times 2\)s，
@@ -36,7 +36,7 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.8\textwidth]{./Pictures/TOF.eps}
+    \includegraphics[width = 0.7\textwidth]{./Pictures/TOF.eps}
     \caption{ToF测距原理}
     \label{tof}
 \end{figure}
@@ -49,13 +49,27 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 这种方式主要用于工业勘探、工件表面粗糙度检测、轮胎检测、飞机检测等工业、航空、军事领域，
 在消费电子类产品还不曾涉及。
 
-% \begin{figure}[h]
-%     \centering
-%     \includegraphics[width = 0.5\textwidth]{./Pictures/Triangulation}
-%     \caption{三角测距原理}
-%     \label{triangulation}
-% \end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width = 0.8\textwidth]{./Pictures/kinect_v1_v2.eps}
+    \caption{Kinect一代（左）与Kinect二代（右）}
+    \label{kinect_v1_v2}
+\end{figure}
 \subsection{结构光测距}
+与ToF相似，结构光测距也是将调制后的光投射到物体表面。
+本文使用的Kinect一代(图\ref{kinect_v1_v2}左)就是采用了结构光技术。
+但与ToF的时间调制不同，结构光法投射的是空间调制的结构化光。
+单的结构化包括点结构光，线结构光以及简单的面结构光等，复杂的结构化会涉及到光学图案的编码了。
+结构光投射到待测物表面后被待测物的高度调制，被调制的结构光经摄像系统采集，
+传送至计算机内分析计算后可得出被测物的三维面形数据。
+以光栅调制为例，光源将正弦条纹投影至被测物，相机会捕捉物体表面形变后的条纹。
+调节形变后的条纹会得到个点的相位，相位则可以进一步转换为距离信息，如图\ref{str_lighting}。
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width = 0.7\textwidth]{./Pictures/str_lighting.eps}
+    \caption{结构光原理}
+    \label{str_lighting}
+\end{figure}
 
-
+\section{三维重建技术}
