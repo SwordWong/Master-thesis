@@ -1,10 +1,16 @@
-\expandafter\def\csname CTEX@spaceChar\endcsname{\hspace{1em}}
-\documentclass[oneside,AutoFakeBold]{ZJUthesis}
+%\expandafter\def\csname CTEX@spaceChar\endcsname{\hspace{1em}}
+\documentclass[oneside,AutoFakeBold=true]{ZJUthesisv2_1}
 \usepackage{url}
 % 该文档中首字符为“%”的均为注释行，不会在论文中出现
 
-% 论文默认为双面模式，需单面模式请将第一行换为如下所示：
-% \documentclass[oneside]{ZJUthesis}
+% 由于fontsepc包有更新，可能造成在编译过程中的问题
+% 如果使用ZJUthesis有问题，可尝试使用ZJUthesisv2
+% 如果仍有问题，可换回ZJUthesis，尝试将下面的一行拷至本文档\documentclass之前
+% \expandafter\def\csname CTEX@spaceChar\endcsname{\hspace{1em}}
+
+% 论文默认为单面模式，需双面模式请将第一行换为如下所示：
+% \documentclass[twoside]{ZJUthesis}
+% AutoFakeBold=true 是为解决在Windows系统下，使用xelatex时中文字体不能加粗的问题
 
 % 取消目录中链接的颜色，方便打印
 % 如需颜色，请将“false”改为“true”
@@ -172,12 +178,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 插图列表
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\ZJUListofFigures
+\ZJUListofFigures
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 表格列表
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\ZJUListofTables
+\ZJUListofTables
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 缩写、符号清单、术语表

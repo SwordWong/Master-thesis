@@ -614,7 +614,7 @@ edition duplicate$ empty$ 'skip$
         { "t" }
       if$ change.case$
       "edition" bibinfo.check
-      " " * bbl.edition *
+%      " " * bbl.edition *
     }
   if$
 }

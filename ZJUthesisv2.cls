@@ -5,19 +5,25 @@
 %% GBK版本和UTF-8版本
 %% 
 %% 本模版是在88TeX版提供的数学系毕业论文模版2006年版基础上
-%% 由王东举于2011年9-10月间修改出第一版，欢迎提出修改意见，欢迎在此基础上自行修改尝试
+%% 由王东举于2011年9-10月间修改出第一版，欢迎提出修改意见，欢迎在此基础上自行修改尝试，此后多次进行修订 
 %% 邮箱：shuwei1204@163.com
 %% 
 %% 
 %% 提供该模版的运行基础
 \NeedsTeXFormat{LaTeX2e}[1995/12/01]
+% 下面这一句参见http://bbs.ctex.org/forum.php?mod=viewthread&tid=78610
+% ctex 包中设置中文字体的命令要早于 \CTEX@spaceChar 的定义。而可能使用 \CTEX@spaceChar 的宏 \CTEXsetfont 则在 \CTEX@spaceChar 之前定义。
+% 因为在线安装，用的是最新的 fontspec 2.4 版本。而 fontspec 改变了内部实现，需要在定义字体时设置字号，触发 \CTEXsetfont，造成问题。
+\expandafter\def\csname CTEX@spaceChar\endcsname{\hspace{1em}}
 % 版本说明
-\ProvidesClass{ZJUthesis}[2013/01/25 v2.0 ZJUthesis document class]
+\ProvidesClass{ZJUthesisv2}[2016/02/17 v2.2 ZJUthesis document class]
 % 基于ctexbook模版，增加专有内容
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{ctexbook}}
 \ProcessOptions
-% 2009/09/13的v0.94及之后版本提供了hyperref的支持，直接写入选项即可
-\LoadClass[cs4size,a4paper,fancyhdr,hyperref]{ctexbook}[2009/09/13]
+% 2016/02/02的v2.2及之后版本不再提供hyperref和fancyhdr选项的支持，需要单独将其列入
+\LoadClass[zihao = -4,a4paper,fontset = windowsnew]{ctexbook}[2016/02/02]
+%专门调入这两个包
+\RequirePackage{fancyhdr,hyperref} 
 %% math packages 数学公式包，非数学系可无视之
 \RequirePackage{amsmath,amsthm,amsfonts,amssymb,bm}
 %% graphicx packages，psgrag用于修改eps图中的信息，但与dvipdfm不兼容
@@ -58,7 +64,6 @@
             pdfstartview=FitH,
                hidelinks
          }
-
 % 文档开始导入默认配置
 \AtBeginDocument{\makeatletter\input{ZJUthesis.cfg}\makeatother}
 
@@ -127,7 +132,7 @@ includehead, includefoot]{geometry}
   \def\ZJUfiledate{#1}%
   \def\ZJUfileversion{#2}%
   \def\ZJUfileinfo{#3}}%
-\edef\reserved@b{\csname ver@ZJUthesis.cls\endcsname}
+\edef\reserved@b{\csname ver@ZJUthesisv2.cls\endcsname}
 \expandafter\reserved@a\reserved@b\@nil\relax
 
 % 新命令Nchapter的定义
@@ -566,21 +571,21 @@ includehead, includefoot]{geometry}
   \fi
 
 % 设置章节标题格式
-\CTEXsetup[name={,}]{chapter}
-\CTEXsetup[number={\arabic{chapter}}]{chapter}
-\CTEXsetup[format={\noindent}]{chapter}
-\CTEXsetup[nameformat={\bfseries\zihao{-3}}]{chapter}
-\CTEXsetup[titleformat={\bfseries\fangsong\zihao{-3}}]{chapter}
-\CTEXsetup[format={\noindent}]{section}
-\CTEXsetup[nameformat={\bfseries\zihao{4}}]{section}
-\CTEXsetup[titleformat={\bfseries\fangsong\zihao{4}}]{section}
-\CTEXsetup[format={\noindent}]{subsection}
-\CTEXsetup[nameformat={\bfseries\zihao{-4}}]{subsection}
-\CTEXsetup[titleformat={\bfseries\fangsong\zihao{-4}}]{subsection}
-\CTEXsetup[format={\noindent}]{subsubsection}
-\CTEXsetup[nameformat={\bfseries\zihao{-4}}]{subsubsection}
-\CTEXsetup[titleformat={\bfseries\zihao{-4}}]{subsubsection}
 % 此处章节标题前后空白距离采用了默认设置，如需修改请参考ctex参考文档ctex.pdf
+\ctexset { chapter = { name={,} } }
+\ctexset { chapter = { number={\arabic {chapter}} } }
+\ctexset { chapter = { format={\noindent } } }
+\ctexset { chapter = { nameformat={\bfseries \zihao {-3}} } }
+\ctexset { chapter = { titleformat={\bfseries \fangsong \zihao {-3}} } }
+\ctexset { section = { format={\noindent } } }
+\ctexset { section = { nameformat={\bfseries \zihao {4}} } }
+\ctexset { section = { titleformat={\bfseries \fangsong \zihao {4}} } }
+\ctexset { subsection = { format={\noindent } } }
+\ctexset { subsection = { nameformat={\bfseries \zihao {-4}} } }
+\ctexset { subsection = { titleformat={\bfseries \fangsong \zihao{-4}} } }
+\ctexset { subsubsection = { format={\noindent } } }
+\ctexset { subsubsection = { nameformat={\bfseries \zihao {-4}} } }
+\ctexset { subsubsection = { titleformat={\bfseries \zihao {-4}} } }
 
 % 正文部分文字的行距设置
 \linespread{1.5}
@@ -754,4 +759,4 @@ includehead, includefoot]{geometry}
   {}%         Thm head spec
 \endinput
 %%
-%% End of file `ZJUthesis.cls'.
+%% End of file `ZJUthesisv2.cls'.

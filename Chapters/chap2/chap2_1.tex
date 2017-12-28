@@ -8,13 +8,13 @@ Apple的iPhone X\cite{apple_iphoneX}、Intel的RealSense\cite{intel_realsense}�
 这些消费级产品的推出，使得深度相机不再仅仅是专业领域的专用设备，使得深度相机有了更为广泛的应用。
 非接触式的三位测距技术可分为主动测距和被动测距。其中主动测距需要由辐射源将额外能量辐射到物体表面，
 传感器接收物体表面反射的能量并据此进行测距。被动测距则不需要设置辐射源，只利用二维图像来重建场景的三维信息。
-
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.95\textwidth]{./Pictures/ARKit.eps}
     \caption{Apple ARKit}
     \label{arkit}
 \end{figure}
+
 现在主流的被动测量技术主要基于立体视觉(Stereoscopic),其原理与人眼视觉相似，
 通过不同相机(如双目视觉)或机位(如单目视觉)的视差计算距离。
 通常通过区块匹配(block matching)或对极几何(epipolar geometry)算法实现。
@@ -33,7 +33,6 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 因此，基于飞行时间的设备会发射固定频率调制的正弦光波，摄像头同步摄像头同步拍摄多帧反射图像，
 根据每个像素亮度的变化规律计算反射光的相位差。
 相位差再乘以光速就得到了像素的距离，如图\ref{tof}。
-
 \begin{figure}[h]
     \centering
     \includegraphics[width = 0.7\textwidth]{./Pictures/TOF.eps}
@@ -42,21 +41,20 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 \end{figure}
 
 \subsection{三角测距}
-
 三角测距法又称主动三角法，
 是基于光学三角原理，根据光源、物体和检测器三者之间的几何成像关系来确定空间物体各点的三维坐标。
 在实际测量过程中，它常用激光作为光源，用CCD相机作为检测器。
 这种方式主要用于工业勘探、工件表面粗糙度检测、轮胎检测、飞机检测等工业、航空、军事领域，
 在消费电子类产品还不曾涉及。
-
 \begin{figure}[h]
     \centering
     \includegraphics[width = 0.8\textwidth]{./Pictures/kinect_v1_v2.eps}
     \caption{Kinect一代（左）与Kinect二代（右）}
     \label{kinect_v1_v2}
 \end{figure}
+
 \subsection{结构光测距}
-与ToF相似，结构光测距也是将调制后的光投射到物体表面。
+与ToF相似，结构光测距也需要将调制后的光投射到物体表面。
 本文使用的Kinect一代(图\ref{kinect_v1_v2}左)就是采用了结构光技术。
 但与ToF的时间调制不同，结构光法投射的是空间调制的结构化光。
 单的结构化包括点结构光，线结构光以及简单的面结构光等，复杂的结构化会涉及到光学图案的编码了。
@@ -64,12 +62,9 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 传送至计算机内分析计算后可得出被测物的三维面形数据。
 以光栅调制为例，光源将正弦条纹投影至被测物，相机会捕捉物体表面形变后的条纹。
 调节形变后的条纹会得到个点的相位，相位则可以进一步转换为距离信息，如图\ref{str_lighting}。
-
 \begin{figure}[h]
     \centering
     \includegraphics[width = 0.7\textwidth]{./Pictures/str_lighting.eps}
     \caption{结构光原理}
     \label{str_lighting}
 \end{figure}
-
-\section{三维重建技术}
