@@ -301,7 +301,7 @@ includehead, includefoot]{geometry}
       \end{tabular}
 
       % 这个距离可以修改
-      \vspace{10mm}  
+      \vspace{10mm} 
 
       % 左右两边字体不同，定义两个宏AB来简化代码，这个功能用到了array宏包
       \newcolumntype{A}{>{\songti}r<{}}
