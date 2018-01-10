@@ -1,1 +1,13 @@
-\section{网格模型形状编辑}
+\section{三维模型形变}
+三维模型的形变一直是图形学届所关注的研究课题。
+形状建模的早期工作主要聚焦在模型的空间形变，
+Barr的工作\cite{barr1984global}就提供了全局的空间重映射。
+FFD(Free-form deformation，自由形变)\cite{sederberg1986free}用三维晶格将空间形变参数化，
+提供了一个高效的对复杂形状施加粗略形变的方法。
+但要得到高质量的形变效果，需要更多细节的控制点\cite{coquillart1990extended}，
+也会引入更多的手工操作。
+常见的网格模型修改工具允许用户移动少量顶点让模型发生形变，同时要保留模型的细节和平滑。
+细分和多分辨率技术将网格细节编码为顶点的在拓扑上的
+偏移\cite{zorin1997interactive}\cite{kobbelt2000multiresolution}
+或者几何上更为简单的基网格\cite{kobbelt1998interactive}，
+从而在不同的尺度下达到细节保留的目的。

@@ -279,7 +279,7 @@ includehead, includefoot]{geometry}
         % 这个地方是做第二行标题的判断，如果标题一行写不下，有第二行则显示，否则不显示
         \ifx\ZJU@value@titletl\undefined
           \hfil
-        \else
+        \else 
           {\bfseries\fangsong\zihao{-2}\ZJUunderline[260pt]{\ZJU@value@titletl}}
         \fi \\[4mm]
         {\bfseries\fangsong\zihao{3}\ZJU@label@Etitle:} 
