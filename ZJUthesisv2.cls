@@ -572,11 +572,12 @@ includehead, includefoot]{geometry}
 
 % 设置章节标题格式
 % 此处章节标题前后空白距离采用了默认设置，如需修改请参考ctex参考文档ctex.pdf
-\ctexset { chapter = { name={,} } }
+%\ctexset { chapter = { name={,} } }
+\CTEXsetup[name={第,章}]{chapter}
 \ctexset { chapter = { number={\arabic {chapter}} } }
-\ctexset { chapter = { format={\noindent } } }
-\ctexset { chapter = { nameformat={\bfseries \zihao {-3}} } }
-\ctexset { chapter = { titleformat={\bfseries \fangsong \zihao {-3}} } }
+\ctexset { chapter = { format={\centering } } }
+\CTEXsetup[nameformat = {\bfseries\fangsong\zihao{-2}}]{chapter}
+\CTEXsetup[titleformat = {\bfseries\fangsong\zihao{-2}}]{chapter}
 \ctexset { section = { format={\noindent } } }
 \ctexset { section = { nameformat={\bfseries \zihao {4}} } }
 \ctexset { section = { titleformat={\bfseries \fangsong \zihao {4}} } }
