@@ -544,12 +544,22 @@ includehead, includefoot]{geometry}
 % 每一个chapter开始的第一页的页眉页脚样式为plain样式
 \fancypagestyle{plain}{%
   \fancyhf{}% 先清除当前页面的页眉页脚定义，是fancyhdr包中的定义
-  \renewcommand{\headrulewidth}{0pt}%
-  \renewcommand{\footrulewidth}{0pt}%
+  %\renewcommand{\headrulewidth}{0pt}%
+  %\renewcommand{\footrulewidth}{0pt}%
+  % \if@twoside
+  %   \fancyfoot[RO]{\zihao{-5} ~\thepage~}
+  %   \fancyfoot[LE]{\zihao{-5} ~\thepage~}
+  % \else
+  %   \fancyfoot[C]{\zihao{-5} ~\thepage~}
+  % \fi
   \if@twoside
+    \fancyhead[CE]{\songti\zihao{-5}\ZJU@value@school\ZJU@value@degree\ZJU@label@thesis}
+    \fancyhead[CO]{\songti\zihao{-5}\leftmark}
     \fancyfoot[RO]{\zihao{-5} ~\thepage~}
     \fancyfoot[LE]{\zihao{-5} ~\thepage~}
   \else
+    \fancyhead[L]{\songti\zihao{-5}\ZJU@value@school\ZJU@value@degree\ZJU@label@thesis}
+    \fancyhead[R]{\songti\zihao{-5}\leftmark}
     \fancyfoot[C]{\zihao{-5} ~\thepage~}
   \fi
 }
