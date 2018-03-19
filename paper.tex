@@ -1,6 +1,15 @@
 %\expandafter\def\csname CTEX@spaceChar\endcsname{\hspace{1em}}
 \documentclass[oneside,AutoFakeBold=true]{ZJUthesisv2}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{amssymb}
+\usepackage{CJK}
 \usepackage{url}
+%修改算法模板样式
+\floatname{algorithm}{算法}
+\renewcommand{\algorithmicrequire}{\textbf{输入:}}
+\renewcommand{\algorithmicensure}{\textbf{输出:}}
 % 该文档中首字符为“%”的均为注释行，不会在论文中出现
 
 % 由于fontsepc包有更新，可能造成在编译过程中的问题
@@ -15,9 +24,7 @@
 % 取消目录中链接的颜色，方便打印
 % 如需颜色，请将“false”改为“true”
 \hypersetup{colorlinks=false}
-
 %\usepackage[sectionbib]{chapterbib}
-
 \begin{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 正文字体设定
