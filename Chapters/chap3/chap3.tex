@@ -4,7 +4,7 @@
  这些工作都需要获取物体的静态模型作为参照。
  本章的目的就是借助深度相机，获取一个物体静态三维模型，作为后续形变捕捉与形变子空间构建的输入。
  本章接下来就会阐述该算法的技术细节。
-\begin{figure}[ht]
+\begin{figure}
     \centering
     \includegraphics[width=0.9\textwidth]{./Pictures/static_mesh.eps}
     \caption{采集静态模型}
@@ -14,7 +14,7 @@
 \section{基于深度相机的三维重建概述}
 对于现实世界中存在的物体，其三维模型通常可以通过CAD软件建模或者借助扫描设备重建。
 本文所使用的模型均借助深度相机重建。
-\begin{figure}[ht]
+\begin{figure}
     \centering
     \includegraphics[width = 0.9\textwidth]{./Pictures/kf_pipeline_cropped.pdf}
     \caption{三维重建流程}

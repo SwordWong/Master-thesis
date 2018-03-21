@@ -21,7 +21,7 @@
 \subsection{手部点云分割}
 由于本文是借助手部点云的位置寻找物体的点云，
 所以需要在输入的点云中分割出属于手的部分。
-本章就将描述一种基于RGBD图像的点云分割算法。
+本节就将描述一种基于RGBD图像的点云分割算法。
 \begin{figure}[h]
     \centering
     \includegraphics[width = \textwidth]{./Pictures/FindingHand.png}
@@ -124,9 +124,9 @@ $d_{min}$是集合中深度最小的像素的深度值。
     \caption{深度过滤}
     \label{alg_dfilter}
     \begin{algorithmic}[1]
-        \Require 深度图像$\mathbf{D_i}$, 像素点集合$\mathbf{S_{in}}$
+        \Require 深度图像$\mathbf{D_i}$, 像素点集合$\mathbf{S_{in}}$,深度阈值$d_{range}$
         \Ensure 像素点集合$\mathbf{S_{out}}$
-        \Function {DepthFilter}{$\mathbf{D_i}$, $\mathbf{S_{in}}$}
+        \Function {DepthFilter}{$\mathbf{D_i}$, $\mathbf{S_{in}}$, $d_{range}$}
             %\State $\mathbf{Set_{out}} \gets \mathbf{Set_{int}}$
             \State $d_{min} \gets$ \Call{Min}{$\mathbf{D_i}$}
             \For {$\forall \mathbf{u} \in \mathbf{S_{in}}$}
@@ -197,6 +197,37 @@ LargestConnectedDomain函数遍历了集合中所有的连通域，并找到其�
 
 
 \subsection{物体点云分割}
+在后续的模型对齐操作中，
+且输入中那些不属于物体的点云，会影响物体位置的估计且容易造成对齐过程中的误匹配。
+所以，为了提高模型匹配的效果，本文需要将模型的点云从数据中分割出来。
+下文就将描述一种借助手部信息，在根据深度图像生成的点云中分割物体点云的算法。
+如图\ref{finding_object}所示
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width = 0.75\textwidth]{./Pictures/FindingObj.png}
+    \caption{物体点云分割流程}
+    \label{finding_object}
+\end{figure}
+
+在分割出手部的点云之后，就可以得知手的位置。
+如前文所说，由于在采集数据的过程中，操作者会手持物体，
+所以物体必定位于手的附近。
+\begin{algorithm}
+    \fangsong
+    \caption{分割手部点云}
+    \label{alg_seg_obj}
+    \begin{algorithmic}[1]
+        \Require 深度图像$\mathbf{D_i}$, 手部像素点集合$\mathbf{S_{hand}}$, 网格模型$\mathbf{m_{object}}$
+        \Ensure 物体像素点集合$\mathbf{S_{object}}$
+        \Procedure{GetObjectPixels}{$\mathbf{D_i}$, $\mathbf{S_{hand}}$,$m_{object}$}
+            \State $\mathbf{V_i} \gets$ \Call{DepthToVertex}{$\mathbf{D_i}$}
+            \State $\mathbf{S_{object}} \gets$ \Call{RadiusFilter}{$\mathbf{V_i}$,$\mathbf{S_{hand}}$}
+            \State $\mathbf{S_{object}} \gets$ \Call{DepthFilter}{$\mathbf{D_i}$, $\mathbf{S_{object}}$,$thd_{object}$}
+            \State $\mathbf{S_{object}} \gets$ \Call{LargestConnectedDomain}{$\mathbf{S_{object}}$}
+        \EndProcedure
+        
+    \end{algorithmic}
+\end{algorithm}
 
 \subsection{模型对齐}
 
