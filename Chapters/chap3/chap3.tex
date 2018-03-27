@@ -54,7 +54,7 @@ KinectFusion算法\cite{izadi2011kinectfusion}以深度视频（由深度图像�
 \begin{equation}
     \bm{V_i(u)}=\bm{D_i}(u)\bm{K}^-1[\bm{u},1]
 \end{equation}
-其中$K$是Kinect深度相机的内参矩阵。
+其中$\bm{K}$是Kinect深度相机的内参矩阵。
 对于深度图像中的每一个像素，其计算是相互独立的，所以这个过程可以借助GPU并行完成，
 得到顶点图$\bm{V_i}$。
 在得到顶点图后，顶点的法向量就可以借助相邻顶点的信息计算得到：

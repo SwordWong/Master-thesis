@@ -1,0 +1,223 @@
+\chapter{基于深度视频的形变关键帧获取}
+要构建模型的形变子空间，除了静态三维模型，
+还需要一些形变后的模型，即形变关键帧作为输入。
+本章描述了一个以静态模型和深度视频为输入的形变捕捉算法。
+在捕捉步骤中，操作者会带着特定颜色的手套，在深度相机前摆弄物体，使得物体发生形变。
+该算法会优化模型的形变参数，使得模型的形状和相机采集的物体形状尽量吻合，
+从而得到形变后的模型。
+本文会从捕捉到的形变中选取若干成为形变关键帧，作为形变子空间构建的输入。
+本章接下来就会阐述该算法的技术细节。
+\section{网格形变的描述}
+本文采用基于双四元数（Dual Quaternions）的形变图（Deformation Graph）描述网格模型的形变，
+形变捕捉步骤就是通过优化形变图的参数使得模型的形状尽可能贴近相机采集的物体形状。
+本节接下来将详细介绍本文描述网格形变的方法。
+\subsection{双四元数}
+本小节将提供一个双四元数的简介。
+简介主要关注四元数的定义与基本性质，以及本文所需要的一些特性与应用，
+会略过数学证明的内容。
+如果想进一步了解有关双四元数的细节，
+可以自行查阅相关资料\cite{mccarthy1990introduction}\cite{kavan2006dual}。
+
+双四元数是一种描述三维变换的工具，可以看做是四元数的扩展。
+四元数是一种在计算机图形学中被广泛应用的描述三维空间中旋转的工具，
+本节默认读者熟悉四元数的性质与应用，再此不多做介绍。
+相较于常规的四元数，双四元数不是那么常见。
+但与四元数只能描述旋转不同，双四元数可以描述三维空间中的刚体变换，
+即其所描述的三维变化不仅包含旋转还包含了平移。
+
+双四元数可看成元素为二元数（dual number）的四元数。与复数相似，二元数是实数的推广。
+一个二元数$\hat{a}$可以被写成$\hat{a} = a_0 + \varepsilon a_{\varepsilon}$，
+其中$a_0$是非二元部，$a_{\varepsilon}$是二元部，
+$\varepsilon$是二元单元，${\varepsilon}^2=0$。
+二元数的共轭与复数相似$\bar{\hat{a}} = a_0 + a_{\varepsilon}$。
+二元数数的乘法可以展开为
+$(a_0+\varepsilon a_{\varepsilon})(b_0 + \varepsilon b_{\varepsilon})=
+ a_0b_0 + \varepsilon (a_0b_{\varepsilon} + a_{\varepsilon}b_0)$。
+二元数的逆可以表示为
+\begin{equation}
+    \hat{a}^{-1}=\frac{1}{a_0+\varepsilon a_{\varepsilon}}
+    =\frac{1}{a_0}-\varepsilon \frac{a_{\varepsilon}}{a^2_0}
+\end{equation}
+
+一个双四元数$\hat{\bm{q}}$可以被写成
+$\hat{\bm{q}}=\hat{w}+i\hat{x}+j\hat{y}+k\hat{z}$，
+其中$\hat{w}$为标量部分（二元数标量），
+$(\hat{x},\hat{y},\hat{z})$为向量部分（二元数向量），
+$i$、$j$、$k$是四元数单位。
+双四元数也可以被写成八元组形式或两个四元数的形式，
+$\hat{\bm{q}}=\bm{q_0}+\varepsilon \bm{q_{\varepsilon}}$，
+而双四元数的共轭被定义为将两个四元数部分分别取共轭，
+$\hat{\bm{q}}^*=\bm{q_0}^*+\varepsilon \bm{q_{\varepsilon}}^*$。
+双四元数的范数$\|\hat{\bm{q}}\|=
+              \sqrt{\hat{\bm{q}}^* \hat{\bm{q}}} =\sqrt{\hat{\bm{q}} \hat{\bm{q}}^*}$
+可被展开为
+\begin{equation}
+    \label{eq_norm_dq}
+    \|\hat{\bm{q}}\| = 
+    \sqrt{\hat{\bm{q}}^* \hat{\bm{q}}} = 
+    \|\bm{q_0}\| + 
+    \varepsilon \frac{\langle \bm{q_0}, \bm{q_{\varepsilon}}\rangle}{\| \bm{q_0} \|} 
+\end{equation}
+双四元数的范数满足性质
+$\|\hat{\bm{p}}\hat{\bm{q}}\| = \|\hat{\bm{p}}\| \|\hat{\bm{q}}\|$。
+根据公式\ref{eq_norm_dq}可知，
+双四元数的逆$\hat{\bm{q}}^-1= \frac{\hat{\bm{q}}^*}{\|\hat{\bm{q}}\|}$
+当且仅当$\bm{q_0} \neq 0$时存在。
+范数为1的双四元数被称为单位双四元数。
+根据公式\ref{eq_norm_dq}可知，当且仅当$\|\bm{q_0}\|=1$且
+$\langle \bm{q_0}, \bm{q_{\varepsilon}}\rangle = 0$
+时，双四元数$\hat{\bm{q}}=\bm{q_0}+\varepsilon \bm{q_{\varepsilon}}$为单位双四元数。
+有此可以看出，单位双四元数并不总是可逆的。
+所以双四元数满足结合律和分配率但不满足交换律。
+
+当二元部$\bm{q_{\varepsilon}}=\bm{0}$时，单位双四元数可以表示三维空间中的旋转。
+对于三维向量$(v_0,v_1,v_2)$可以构造对应的双四元数
+$\hat{\bm{v}}=1 + \varepsilon (v_0i + v_1j + v_2k)$。
+向量$(v_0,v_1,v_2)$关于单位双四元数$\hat{\bm{q}}$的旋转可以被表示为
+$\hat{\bm{q}} \hat{\bm{v}} \bar{\hat{\bm{q}}^*}$。
+可以证明，当$\bm{q_{\varepsilon}}=\bm{0}$时，$\hat{\bm{q}}=\bm{q_0}$，
+所以$\hat{\bm{q}} \hat{\bm{v}} \bar{\hat{\bm{q}}^*}$可被简化为
+\begin{equation}
+    \bm{q_0}
+    (
+        1 + \varepsilon (v_0i + v_1j + v_2k)
+    )
+    \bm{q_9}^*
+    =
+    1 + \varepsilon \bm{q_0}(v_0i + v_1j + v_2k)\bm{q_0}^*
+\end{equation}
+可以看出$\bm{q_0}(v_0i + v_1j + v_2k)\bm{q_0}^*$即为由常规四元数定义的旋转。
+此外，当$\bm{q_0} = 1$时，双四元数可以表示三维空间中的平移变换。
+双四元数$\hat{\bm{t}} = 1 + \frac{\varepsilon}{2} (t_0i + t_1j + t_2k)$
+能够表示向量$(t_0,t_1,t_2)$所描述的平移变换。
+经计算不难得知，
+$\hat{\bm{t}} \hat{\bm{v}} \bar{\hat{\bm{t}}^*}$可被简化为
+$
+1 + \varepsilon (
+        (v_0 + t_0)i +
+        (v_1 + t_1)j +
+        (v_2 + t_2)k
+    )
+$
+刚体变换时旋转与平移的结合，而双四元数表示变换可以通过双四元数乘法叠加。
+若用单位四元数$\bm{q_0}$描述旋转，
+用单位双四元数$1 + \frac{\varepsilon}{2} (t_0i + t_1j + t_2k)$描述平移，
+则该刚体变换对应的四元数为
+\begin{equation}
+    \label{eq_dq_rt}
+    (1 + \frac{\varepsilon}{2} (t_0i + t_1j + t_2k))
+    \bm{q_0}
+    =
+    \bm{q_0} + \frac{\varepsilon}{2} (t_0i + t_1j + t_2k)\bm{q_0}
+\end{equation}
+可以证明，公式\ref{eq_dq_rt}的结果一定是单位双四元数，
+且所有单位双四元数都可以写成如上形式。
+如同$3 \times 3$的旋转矩阵可以与四元数互相转换，
+$4 \times 4$的刚体变换矩阵也可以与双四元数互相转换。
+
+利用双四元数，可以方便的进行刚体变换的插值运算。
+Kavan等人\cite{kavan2006dual}提出了双四元数线性混合
+（DLB  Dual quaternion Linear Blending）用于
+两个及两个以上的双四元数的插值
+\begin{equation}
+    DLB(\bm{w},\hat{\bm{q_1}},\ldots,\hat{\bm{q_n}}) = 
+    \frac{
+            w_1\hat{\bm{q_1}} + \ldots + w_n\hat{\bm{q_n}}
+        }
+        {
+            \| w_1\hat{\bm{q_1}} + \ldots + w_n\hat{\bm{q_n}}\|
+        }
+\end{equation}
+$DLB$满足以下几个性质：
+\begin{enumerate}
+    \item  $DLB$的返回值永远是刚体变换。
+    \item  $DLB$具有坐标不变性。
+           对于任何单位双四元数$\hat{\bm{r}}$,满足
+           \begin{equation}
+                DLB(\bm{w},\hat{\bm{r}}\hat{\bm{q_1}}\hat{\bm{r}}^*,
+                \ldots , 
+                \hat{\bm{r}}\hat{\bm{q_n}}\hat{\bm{r}}^*)
+                =
+                \hat{\bm{r}}DLB(\bm{w},\hat{\bm{q_1}},\ldots,\hat{\bm{q_n}})\hat{\bm{r}}^*
+           \end{equation}
+    \item  当$DLB$作用于两个刚体变换时，它会在二者间的最短路径上插值。
+\end{enumerate}
+本文就是采用$DLB$进行刚体变换的插值。
+关于以上性质的证明，
+可以查阅Kavan等人\cite{kavan2006dual}的论文。
+
+\subsection{基于双四元数的形变图}
+本文采用基于双四元数的形变图描述网格图形的形变。
+形变图（Deformation Graph）\cite{sumner2007embedded}
+是一种被广泛应用的通用的描述形变的方法，通常用于模型的形状编辑。
+形变图是一种特殊的图结构，由节点集合$\bm{Node}$和边集合$\bm{Edge}$组成。
+$\bm{Node}$中的每个节点$node_i = {\bm{vn_i}， \hat{\bm{q}}_i}$
+记录了节点在未形变时的位置$\bm{vn_i}$以及该节点在模型空间中发生的刚体变换$\hat{\bm{q}}_i$。
+$\bm{Edge}$中的边$edge_{ij}$连接了$node_i$与$node_{j}$。
+相连的节点在优化的过程中会互相约束，
+以保证形变过程中能够保持模型的局部特征。
+
+原始的形变图中，图中的节点用旋转矩阵和平移向量描述该节点的刚体变换。
+本文借鉴了Dynamic Fusion\cite{newcombe2015dynamicfusion}中的形变框架Warp Field，
+用双四元数$\hat{\bm{q}}$描述节点的刚体变换。
+相较于变换矩阵，双四元数有以下优点：
+\begin{enumerate}
+    \item   双四元数拥有更少的参数。
+            旋转矩阵和平移向量共有$9+3=12$个参数，每个节点需12个参数。
+            而一个双四元数共有8个变量，使整个形变图的控制参数减少了三分之一，
+            使得需要优化的变量更少。
+    \item   不需要额外约束确保旋转矩阵不含缩放与剪切变换。
+            对于$3 \times 3$的变换矩阵所定义三维变换除了旋转外，
+            还可能包含缩放与剪切。所以在原始的形变图模的优化中，
+            会再能量函数中添加约束使得优化后的矩阵仍然是旋转矩阵。
+            但双四元数所描述的变换必然是刚体变换，无需添加额外的软约束。
+    \item   双四元数可通过$DLB$直接插值。
+            变换矩阵无法直接插值，
+            原始的形变图是通过计算各节点与模型顶点在形变前的相对位置估算出顶点的当前位置，
+            然后再对各顶点估算出的顶点位置做线性插值，最终得到顶点在形变后的位置。
+            这一过程十分繁琐。
+            而四元数则可以直接进行对刚体变换插值。
+            所以对于模型上的顶点，可以直接计算出该顶点需要的刚体变换，
+            使得计算顶点位置的步骤更为简洁高效。
+            而且，如上一小节所说，利用$DLB$进行双四元数的插值具有良好的性质,
+            通过插值得到的形变结果也较为自然。
+\end{enumerate}
+
+在基于双四元数的形变图构建完成后，
+就可以利用双四元数插值计算出空间中任意一点刚体变换。
+由此可以定义一个映射$G:\mathbb{R}^3\rightarrow \bm{SE}(3)$。
+其中$\bm{SE}(3)$为三维欧氏群，可看做所有三维空间中的刚体变换矩阵的集合。
+本文对函数$G$做如下定义：
+\begin{equation}
+    G(\bm{x})\equiv Q2T(
+        \frac
+        {\sum_{node_k \in GN(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}}}
+        {\| \sum_{node_k \in GN(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}} \|}
+    )
+\end{equation}
+可以看出$\frac
+        {\sum_{node_k \in GN(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}}}
+        {\| \sum_{node_k \in GN(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}} \|}$
+就是以$w(\bm{x},\bm{vn_k})$为权重，利用$DLB$对相应的节点的双四元数进行插值，
+得到描述$\bm{x}$处所需刚体变换的双四元数，而$Q2T$是将双四元数转换为相应刚体变换矩阵的函数。
+其中$GN(x)$包含了$\bm{Node}$中距离$x$最近的$k$个节点，
+$ w(\bm{x},\bm{vn_k})$为节点$node_k$在位置$\bm{x}$出插值的权重
+\begin{equation}
+    w(\bm{x},\bm{vn}) = e^{-\frac{\| \bm{vn} - \bm{x} \|}{2r_G^2}}
+\end{equation}
+$\bm{x}$与$\bm{vn}$越接近权重越大。
+$r_G$为构建形变图时节点的距离，定义了图中节点的离散程度。
+
+可以看出基于双四元数形变图定义了空间中的一个场，场中每个位置的刚体变换会受附近节点的影响。
+所以Dynamic Fusion中将这种用双四元数描述的形变框架称为Warp Field。
+为了便于描述，本文之后提到的形变图均为基于双四元数的形变图。
+\subsection{形变图的构建}
+
+\section{形变参数优化}   
+\subsection{形变优化流程}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+\subsection{数据误差优化}
+\subsection{形变图正则化}
+\section{提取形变关键帧}
+\subsection{多视角关键帧合成}
+\subsection{关键帧对齐}
+\section{本章小结}
