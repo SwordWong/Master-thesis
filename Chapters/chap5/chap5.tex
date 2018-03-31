@@ -151,7 +151,7 @@ $DLB$满足以下几个性质：
 形变图（Deformation Graph）\cite{sumner2007embedded}
 是一种被广泛应用的通用的描述形变的方法，通常用于模型的形状编辑。
 形变图是一种特殊的图结构，由节点集合$\bm{Node}$和边集合$\bm{Edge}$组成。
-$\bm{Node}$中的每个节点$node_i = {\bm{vn_i}， \hat{\bm{q}}_i}$
+$\bm{Node}$中的每个节点$node_i = \{\bm{vn_i}, \hat{\bm{q}}_i\}$
 记录了节点在未形变时的位置$\bm{vn_i}$以及该节点在模型空间中发生的刚体变换$\hat{\bm{q}}_i$。
 $\bm{Edge}$中的边$edge_{ij}$连接了$node_i$与$node_{j}$。
 相连的节点在优化的过程中会互相约束，
@@ -191,16 +191,16 @@ $\bm{Edge}$中的边$edge_{ij}$连接了$node_i$与$node_{j}$。
 \begin{equation}
     G(\bm{x})\equiv Q2T(
         \frac
-        {\sum_{node_k \in GN(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}}}
-        {\| \sum_{node_k \in GN(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}} \|}
+        {\sum_{node_k \in \bm{GN}(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}}}
+        {\| \sum_{node_k \in \bm{GN}(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}} \|}
     )
 \end{equation}
 可以看出$\frac
-        {\sum_{node_k \in GN(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}}}
-        {\| \sum_{node_k \in GN(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}} \|}$
+        {\sum_{node_k \in \bm{GN}(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}}}
+        {\| \sum_{node_k \in \bm{GN}(x)}w(\bm{x},\bm{vn_k}) \hat{\bm{q_k}} \|}$
 就是以$w(\bm{x},\bm{vn_k})$为权重，利用$DLB$对相应的节点的双四元数进行插值，
 得到描述$\bm{x}$处所需刚体变换的双四元数，而$Q2T$是将双四元数转换为相应刚体变换矩阵的函数。
-其中$GN(x)$包含了$\bm{Node}$中距离$x$最近的$k$个节点，
+其中$\bm{GN}(x)$包含了$\bm{Node}$中距离$x$最近的$k$个节点，
 $ w(\bm{x},\bm{vn_k})$为节点$node_k$在位置$\bm{x}$出插值的权重
 \begin{equation}
     w(\bm{x},\bm{vn}) = e^{-\frac{\| \bm{vn} - \bm{x} \|}{2r_G^2}}
@@ -211,9 +211,179 @@ $r_G$为构建形变图时节点的距离，定义了图中节点的离散程度
 可以看出基于双四元数形变图定义了空间中的一个场，场中每个位置的刚体变换会受附近节点的影响。
 所以Dynamic Fusion中将这种用双四元数描述的形变框架称为Warp Field。
 为了便于描述，本文之后提到的形变图均为基于双四元数的形变图。
-\subsection{形变图的构建}
 
-\section{形变参数优化}   
+\subsection{形变图的构建}  
+对于给定的网格模型，本文会自动构建与之对应的形变图。
+形变图的节点会尽可能均匀的分布在模型的表面，并用边连接相邻的节点。
+算法\ref{alg_build_graph}描述了形变图构建的流程。
+形变图的构建可主要分为三个步骤：
+生成节点、生成边、记录每个顶点的k最近邻节点。
+\begin{algorithm}
+    %\fangson
+    \caption{形变图构建}
+    \label{alg_build_graph}
+    \begin{algorithmic}[1]
+        \Procedure{BuildGraph}{$\bm{V_{mesh}}$,$r_G$,$k_e$,$k_v$}
+            \State build KD Tree from $\bm{V_{mesh}}$
+            \State $\bm{Node} \gets$ \Call{GenerateNodes}{$\bm{V_{mesh}}$,$r_G$}
+            \State build KD Tree from $\bm{Node}$
+            \State $\bm{Edge} \gets$ \Call{GenerateEdges}{$\bm{Node}$,$k_e$}
+            \State $\bm{GN} \gets$ \Call{FindKnnNodesForVertex}{$\bm{Node}$,$\bm{V_{mesh}}$, $k_v$}
+        \EndProcedure
+    \end{algorithmic}
+\end{algorithm} 
+
+首先，本文会在网格模型的表面均匀的生成形变节点。
+可以看出形变节点分布的密度可通过参数$r_G$控制，
+边的数目可用阐述$k_e$控制,
+控制每个顶点的节点的个数可通过$k_v$控制。
+算法\ref{alg_gen_nodes}描述了该步骤的实现流程。
+构建形变图的的第一步是在模型表面生成均匀分布的形变节点。
+该步骤的输入时模型中的所有顶点$\bm{V_{mesh}}$与节点间的最大距离$r_G$。
+本文会从模型中所有顶点所在的位置中采样，并保证生成的任意两个节点的距离不小于$r_G$。
+在这一步中，本文会维护一个未被任何节点覆盖的顶点的集合
+\begin{equation}
+    \bm{V_{uncovered}}  = \{\bm{v} \in \bm{V_{mesh}} \quad |
+    \quad \forall node_i \in \bm{Node}: \| \bm{vn_i} - \bm{v}\| > r_G\}
+\end{equation}
+在循环开始前，$\bm{V_{uncovered}}$包含$\bm{V_{mesh}}$中的顶点。
+在每一次循环中，在$V_{uncovered}$里随机挑选一个顶点$\bm{v_r}$，作为新的节点。
+然后找出所有与该节点的距离小于$r_G$的模顶点，被称为已覆盖顶点，将其从$\bm{V_{uncovered}}$中剔除。
+为了提高查找已覆盖顶点的效率，
+本文会在开始生成节点之前，以模型中所有顶点的位置为元素构建一个KD Tree。
+这样形变图节点附近的模型顶点通过KD Tree进行快速的查找。
+上述过程会不断重复，直到$\bm{V_{uncovered}}$中的顶点全部被剔除。
+\begin{algorithm}
+    %\fangsong
+    \caption{生成形变图节点}
+    \label{alg_gen_nodes}
+    \begin{algorithmic}[1]
+        \Function{GenerateNodes}{$\bm{V_{mesh}}$,$r_G$}
+        %\State $KDTree \gets$ build KD-Tree with all vertices in $V_{mesh}$
+        \State $\bm{V_{uncovered}} = \bm{V_{mesh}}$
+        \While{$\bm{V_{uncovered}} \neq \varnothing $}
+            \State $\bm{v_r} \gets$ randomly select a vertex in $V_{uncovered}$
+            \State $node.\bm{vn} \gets \bm{v_r}$
+            \State $\bm{Node} \gets \bm{Node} \bigcup \{node\}$
+            \State $\bm{V_{uncovered}} \gets \bm{V_{uncovered}} - 
+                    \{\bm{v} \in \bm{V_{uncovered}} \quad | \quad 
+                    \|\bm{v} - \bm{v_r}\| \leq r_G\}$
+        \EndWhile
+        \State \Return $\bm{Node}$
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm} 
+
+在生成了形变图之后，本文会用边连接相邻的节点。
+本文用k最近邻的策略进行边的构建，为了提高k最近邻查找的速度，
+本文在生成了形变图节点后，以节点的位置为元素构建一棵KD Tree。
+算法\ref{alg_gen_edges}描述了生成形变图边的过程：
+对于图中的每个节点$node_i$，利用KD Tree找出离它$k_e$个节点。
+对于每个找到的近邻节点$node_j$，构建一条从$node_i$到$node_j$的边。
+可以看出，形变图中的边是单向边，所以形变图是一个单向图。
+单向图的边对于模型顶点位置的插值计算并无影响，
+但它在形变参数优化的过程中对于模型的平滑性有着重要的作用。
+图\ref{build_graph}为$k_e=6$，$k_v=4$时构建出的形变图。
+\begin{figure}[]
+    \centering
+    \includegraphics[width = \textwidth]{./Pictures/build_graph.jpg}
+    \caption{构建形变图}
+    \label{build_graph}
+\end{figure}
+\begin{algorithm}
+    %\fangsong
+    \caption{生成形变图边}
+    \label{alg_gen_edges}
+    \begin{algorithmic}[1]
+        \Function {GenerateEdges}{$\bm{Node}$,$k_e$}
+            \For{$\forall node_i \in \bm{Node}$}
+                % find k-nearest nodes $node_j$ of $node_i$
+                %  and build $edge_{ij}$ form $node_i$ to $$
+                \For{all $k_e$ nearest nodes $node_j$ of $node_i$}
+                    \State $edge_{ij} \gets$ build edge for $node_i$ to $node_j$
+                    \State $\bm{Edge} \gets \bm{Edge} \bigcup \{edge_{ij}\}$
+                \EndFor
+            \EndFor
+            \State \Return $\bm{Edge}$
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm} 
+
+构建了形变节点和连接相邻节点的边，形变图本身的结构和性质以及确定，
+但还需要确定形变图节点与模型顶点的对应关系，
+即确定每个顶点的刚体变换由哪些顶点的刚体变换插值得到。
+如同上一节中所说，本文采用k最近邻策略确定控制每个模型顶点的形变节点。
+对于模型中的顶点$\bm{v}$，选取形变图中离它最近的$k_v$个形变节点，
+作为该节点的控制节点。
+在形变过程计算顶点$\bm{v}$发生的刚体变换由它所有的控制节点的刚体形变插值得到。
+由于模型顶点和形变图节点的控制关系是通过未发生形变时的位置确定的，
+这一关系在形变的过程中并不会改变。
+所以控制关系只需要在确定了形变图结构后计算一次并记录下来。
+算法\ref{alg_knn_nodes}描述了这一过程。
+与生成边的步骤中一样，
+k最近邻形变节点可以借助事先构建的KD Tree快速查找。
+\begin{algorithm}
+    %\fangsong
+    \caption{生成形变图边}
+    \label{alg_knn_nodes}
+    \begin{algorithmic}[1]
+        \Function{FindKnnNodesForVertex}{$\bm{Node}$,$\bm{V_{mesh}}$, $k_v$}
+            \For{$\forall \bm{v} \in \bm{V_{mesh}}$}
+                \State $\bm{Node_{knn}} \gets$ get $k_v$ nearest nodes of $\bm{v}$
+                \State $\bm{GN}(\bm{v}) \gets \bm{Node_{knn}}$
+            \EndFor
+            \State \Return $\bm{GN}$
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm} 
+
+% \begin{algorithm}
+%     %\fangsong
+%     \caption{形变图构建}
+%     \label{alg_build_graph}
+%     \begin{algorithmic}[1]
+%         \Procedure{BuildGraph}{$\bm{V_{mesh}}$,$r_G$,$k_e$,$k_v$}
+%             %\State build KD Tree with $\bm{V_{mesh}}$
+%             \State $\bm{Node} \gets$ \Call{GenerateNodes}{$\bm{V_{mesh}}$,$r_G$}
+%             %\State build KD Tree with $\bm{Node}$
+%             \State $\bm{Edge} \gets$ \Call{GenerateEdges}{$\bm{Node}$,$k_e$}
+%             \State $\bm{GN} \gets$ \Call{FindKnnNodesForVertex}{$\bm{Node}$,$\bm{V_{mesh}}$, $k_v$}
+%         \EndProcedure
+%         \Function{GenerateNodes}{$\bm{V_{mesh}}$,$r_G$}
+%             %\State $KDTree \gets$ build KD-Tree with all vertices in $V_{mesh}$
+%             \State $\bm{V_{uncovered}} = \bm{V_{mesh}}$
+%             \While{$\bm{V_{uncovered}} \neq \varnothing $}
+%                 \State $\bm{v_r} \gets$ randomly select a vertex in $V_{uncovered}$
+%                 \State $node.\bm{vn} \gets \bm{v_r}$
+%                 \State $\bm{Node} \gets \bm{Node} \bigcup \{node\}$
+%                 \State $\bm{V_{uncovered}} \gets \bm{V_{uncovered}} - 
+%                         \{\bm{v} \in \bm{V_{uncovered}} \quad | \quad 
+%                         \|\bm{v} - \bm{v_r}\| \leq r_G\}$
+%             \EndWhile
+%             \State \Return $\bm{Node}$
+%         \EndFunction
+%         \Function {GenerateEdges}{$\bm{Node}$,$k_e$}
+%             \For{$\forall node_i \in \bm{Node}$}
+%                 % find k-nearest nodes $node_j$ of $node_i$
+%                 %  and build $edge_{ij}$ form $node_i$ to $$
+%                 \For{all $k_e$ nearest nodes $node_j$ of $node_i$}
+%                     \State $edge_{ij} \gets$ build edge for $node_i$ to $node_j$
+%                     \State $\bm{Edge} \gets \bm{Edge} \bigcup \{edge_{ij}\}$
+%                 \EndFor
+%             \EndFor
+%             \State \Return $\bm{Edge}$
+%         \EndFunction
+%         \Function{FindKnnNodesForVertex}{$\bm{Node}$,$\bm{V_{mesh}}$, $k_v$}
+%             \For{$\forall \bm{v} \in \bm{V_{mesh}}$}
+%                 \State $\bm{Node_{knn}} \gets$ get $k_v$ nearest nodes of $\bm{v}$
+%                 \State $\bm{GN}(\bm{v}) \gets \bm{Node_{knn}}$
+%             \EndFor
+%             \State \Return $\bm{GN}$
+%         \EndFunction
+%     \end{algorithmic}
+% \end{algorithm} 
+\section{形变参数优化}
+
 \subsection{形变优化流程}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 \subsection{数据误差优化}
 \subsection{形变图正则化}
