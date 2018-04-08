@@ -408,6 +408,11 @@ k最近邻形变节点可以借助事先构建的KD Tree快速查找。
     \label{deformation_sampling}
 \end{figure}
 首先，本文将根据公式\ref{eq_d2v}将输入的深度图像转换为相应的三维点云。
+在采集的深度视频中，操作者手部的深度信息也会被采集。
+这些手部的深度信息对于形变捕捉来说是噪声，
+本文会通过颜色过滤去除那些深度图像中可能是手部的区域。
+由于在形变捕捉步骤中，仅有模型所在的区域（通过模型的透视投影获得）的深度信息会参与运算，
+所以在这一阶段并不需要像确定初始位姿时通过深度过滤和最大连通域进一步分割属于物体的区域。
 无论是计算模型的刚体变换还是模型的非刚体变换，
 这个点云均被看做模型的参照。
 
@@ -447,6 +452,17 @@ $\lambda$是正则项的权重系数，用来控制形变图中相邻节点间�
 在形变捕捉的过程中，上述步骤不断重复，
 每一帧都会得到一个与深度图像相对应的形变后的网格模型。
 本文会从中挑选出一些模型用以构造形变关键帧。
+图\ref{deformation_sampling_demo}显示了形变捕捉的结果，
+左边的大图显示了将形变后的网格模型按照深度相机的相机的相机参数渲染到RGB图像上的结果；
+右边的四张图分别是根据颜色过滤后的深度图生成的法向图、RGB图像、形变前的网格模型、
+形变后的网格模型。
+
+\begin{figure}
+    \centering
+    \includegraphics[width = \textwidth]{./Pictures/defSamp.png}
+    \caption{形变捕捉结果}
+    \label{deformation_sampling_demo}
+\end{figure}
 \subsection{数据能量项}
 优化形变参数的目标是让形变后的模型形状和深度相机捕捉到的物体形状尽可能接近，
 数据能量项就描述了形变后的模型和捕捉到点云之间的误差。
@@ -475,9 +491,9 @@ $\lambda$是正则项的权重系数，用来控制形变图中相邻节点间�
 \begin{equation}
     DE(\bm{Node},\bm{mesh},\bm{D})=
     \sum \psi_{DE}(
-        \hat{\bm{no_u}^T}
+        \hat{\bm{no}}_{\bm{u}}^T
         (
-            \hat{\bm{vo_u}}
+            \hat{\bm{vo}}_{\bm{u}}
             -
             \bm{vd_{\widetilde{\bm{u}}}}
         )
@@ -485,8 +501,8 @@ $\lambda$是正则项的权重系数，用来控制形变图中相邻节点间�
 \end{equation}
 其中
 \begin{align}
-    &\hat{\bm{no_u}}=G(\bm{vo_u})\bm{no_u}=G(\bm{VO}(\bm{u}))\bm{NO}(\bm{u})\\
-    &\hat{\bm{vo_u}}=G(\bm{vo_u})\bm{vo_u}=G(\bm{VO}(\bm{u}))\bm{VO}(\bm{u})
+    &\hat{\bm{no}}_{\bm{u}}=G(\bm{vo_u})\bm{no_u}=G(\bm{VO}(\bm{u}))\bm{NO}(\bm{u})\\
+    &\hat{\bm{vo}}_{\bm{u}}=G(\bm{vo_u})\bm{vo_u}=G(\bm{VO}(\bm{u}))\bm{VO}(\bm{u})
 \end{align}
 分别为可见模型点云根据形变图形变后的顶点坐标与法向量。
 $\bm{vd_{\widetilde{\bm{u}}}}$为与其对应的深度图点云$\bm{VD}$中的顶点。
@@ -550,6 +566,124 @@ $\psi_{re}(\bm{v})$为Huber惩罚函数，是一个能保持不连续性的惩�
     \end{cases}
 \end{equation}
 \section{提取形变关键帧}
+本文将用来构建形变子空间的形变模型称为形变关键帧，
+这些形变关键帧通常为该物体较为典型的形变状态。
+在形变捕捉步骤中，本文会计算每一帧模型的形变参数，
+获得每一帧和深度图像相匹配的形变模型。
+形变模型中每个顶点的位置由未形变模型的顶点位置在当前时刻的形变图变换得到。
+本文会从这些形变模型中人为挑选一些具有代表性的形变模型，
+作为用于构建形变子空间的形变关键帧。
+
+但形变捕捉过程中的获得的形变模型并不能直接用于形变子空间的构建。
+其一，形变捕捉是根据深度图像采集的形状优化模型的形变参数，
+而深度图像仅包含物体朝向相机的那一面的形状信息，背向相机的那一面的形状是未知的。
+背面的形状是通关相邻形变节点间的约束由正面传递过去的，可能并不准确。
+其二，由于累计误差，各帧获得的形变模型在空间中并未对齐，
+这会导致有此构建的形变子空间包含了冗余的变换信息。
+本节就会描述解决上述问题的方法。
 \subsection{多视角关键帧合成}
+为了解决模型背面形变不准的问题，
+本文给出了一种合成多个形变模型的方法。
+对于同一形态的物体，操作者可以在不同视角下采集数据，
+每个视角各自生成一个形变模型，
+然后将这些模型合成为一个模型。
+
+本文将一个视角下的形变模型称为子关键帧。
+对于每一个子关键帧，本文将该模型中的顶点分为可见部分与不可见部分。
+可见部分即模型中朝向相机的部分。
+本文将包含第$k$个子关键帧中所有可见顶点的集合称为$\bm{V_{visible}^k}$。
+对于第$k$子关键帧中的顶点$\bm{v_i^k}$，
+其在相机坐标系中的位置为$\bm{T_{rigid}}\bm{v_i^k}$。
+相机焦点在相机坐标系中位于原点$(0,0,0)$。
+如果从原点$(0,0,0)$到$\bm{T_{rigid}}\bm{v_i^k}$的射线不与该子关键帧中任何不包含该顶点的面相交，
+则顶点编号$\bm{v_i^k}$属于集合$\bm{V_{visible}^k}$。
+本文定义了如下公式将$m$子关键帧的顶点合并：
+\begin{equation}
+    \widetilde{\bm{v}}_{\bm{i}} =
+        \frac
+            {\sum_{k=1}^{m} w(\bm{v_i^k})\bm{v_i^k}}
+            {\sum_{k=1}^{m}w(\bm{v_i^k)}}
+\end{equation}
+其中
+\begin{equation}
+    w(\bm{v_i^k})=
+    \begin{cases}
+        w_v
+        &\bm{v_i^k} \in \bm{V_{visible}^k}\\
+        1
+        &\bm{v_i^k} \notin \bm{V_{visible}^k}\\
+    \end{cases}
+\end{equation}
+$w_v>1$为可见顶点的权重，本文的使用中设为2。
+可以看出合成的方法为对各子关键帧的顶点加权平均，
+每个子关键帧的可见顶点拥有更大的权重。
+% \begin{equation}
+%     \bm{ID_{v}} = \{ i \quad | \quad \bm{v_i} \in \bm{V_{mesh}}\ and\  
+%     \nexists \bm{f} \in \bm{F_{mesh}} \quad the\ ray\ from (0,0,0)\ 
+%     to\ G(\bm{v_i})\bm{T_{rigid}}\bm{v_i}\ intersect\ \bm{f}\}
+% \end{equation}
+% \begin{algorithm}
+%     %\fangsong
+%     \caption{获取可见顶点}
+%     \label{alg_get_visible}
+%     \begin{algorithmic}[1]
+       
+%         \Procedure{GetVisibleVertexes}{$\bm{mesh}$, $\bm{Node}$,$\bm{T_{rigid}}$,$\bm{K}$}
+%              \State $\bm{mesh_{c}} \gets$ deform $\bm{mesh}$ with $\bm{Node}$ and transform it with $\bm{T_{rigid}}$
+%              \For{$\forall \bm{arg}$}
+%         \EndProcedure
+%     \end{algorithmic}
+% \end{algorithm}
 \subsection{关键帧对齐}
+从捕捉到的形变状态中提取关键帧时，
+本文会去处模型的整体刚体变换$\bm{T_{rigid}}$，
+提取的模型仅更具形变图更新顶点位置。
+但形变图本质上是控制每个顶点在空间的刚体变换，
+其中可以包含整个模型的刚体变换，如图\ref{before_align}所示。
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.6\textwidth]{./Pictures/before_align.png}
+    \caption{对齐前的关键帧}
+    \label{before_align}
+\end{figure}
+
+在每一帧的形变捕捉计算中，
+每次估计的$\bm{T_{rigid}}$都会存在误差。
+如同上文所述，
+每个顶点的空间变换由模型整体变换$\bm{T_{rigid}}$和由形变图描述的顶点变换$G(\bm{v})$两部分组成。
+$\bm{T_{rigid}}$部分微小的偏移量可能会在形变参数优化时由$G(\bm{v})$部分补足。
+每一帧的误差可能很小，但这些误差会逐帧积累，
+导致提取出的关键帧存在整体偏移。
+在构建形变子空间时从关键帧中提取的特征向量描述的是关键帧关于初始模型的相对形变。
+这些整体偏移的平移部分对特征向量没有影响，
+但是其旋转分量会导致从关键帧中提取的特征向量包含冗余的旋转信息。
+所以本文需要消除这些偏移。
+\begin{figure}
+    \centering
+    \includegraphics[width = \textwidth]{./Pictures/align_area.png}
+    \caption{模型中用于对齐的区域}
+    \label{align_area}
+\end{figure}
+本文采用的策略是选取模型中的一部分顶点，
+各关键帧均用这部分顶点用ICP算法向初始模型对齐。
+这个用于区域需要在形变捕捉的过程中是未发生形变的，
+这样能提取出关键帧够尽可能保留模型的形变信息。
+本文用初始位姿估计时被手覆盖的区域作为用于对齐的的区域。
+图\ref{align_area}分别为初始模型和6个关键帧，
+模型中红色的部分为用于对齐区域。
+图\ref{after_align}为对齐后的初始模型和形变关键帧。
+\begin{figure}[h]
+    \centering
+    \includegraphics[width = 0.6\textwidth]{./Pictures/after_align.jpg}
+    \caption{对齐后的关键帧}
+    \label{after_align}
+\end{figure}
 \section{本章小结}
+本文描述了基于深度视频捕捉模型形变并生成形变关键帧的过程。
+首先，本章介绍了双四元数的定义和性质，给出了形变框架的数学基础；
+然后本章介绍了本文的形变框架，
+描述了基于双四元数的形变图的定义、结构及其构造过程；
+之后本章介绍了形变捕捉的流程，给出了形变参数优化问题的定义，
+并消息介绍了能量函数的含义；
+最后本章介绍从捕捉到的形变模型中提取关键帧的过程，
+描述了多角度关键帧合成和关键帧对齐的方法。
