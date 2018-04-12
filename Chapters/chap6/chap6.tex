@@ -134,6 +134,7 @@ $\bm{V}$与$\bm{V^{'}}$均为$3 \times 3$的矩阵，每一列分别为三个相
 对于$k$个基向量，给定$k$维权重向量$\bm{w}$,
 可得到插值后的特征向量
 \begin{equation}
+    \label{eq_intp}
     \bm{f_w}=\bm{Intp}(\bm{w})
 \end{equation}
 其中$\bm{Intp}$为插值函数。
@@ -258,27 +259,154 @@ $\bm{f_c}$为$3l$维的向量，
 \begin{eqnarray}
     \bm{\widetilde{G}}&=&
     \begin{bmatrix}
-        \bm{\widetilde{G_d}} &        & \\ 
-         &       \bm{\widetilde{G_d}} & \\ 
-         &       &                  \bm{\widetilde{G_d}}
+        \bm{\widetilde{G}_d} &        & \\ 
+         &       \bm{\widetilde{G}_d} & \\ 
+         &       &                  \bm{\widetilde{G}_d}
     \end{bmatrix}\\
-    \bm{\widetilde{G_d}}&=&
+    \bm{\widetilde{G}_d}&=&
     \begin{bmatrix}
         \bm{G_d} \\ 
         \bm{G_c}
     \end{bmatrix}
 \end{eqnarray}
-
+$\widetilde{\bm{f}}$中与$\bm{G_d}$对应的行为原特征向量$\bm{f}$中的值，
+与$\bm{\bm{G_c}}$对应的行值都为0;
+$\bm{c}$中与$\bm{G_d}$对应的行为值为0，
+与$\bm{\bm{G_c}}$对应的行值都为$\bm{f_c}$中的值。
 若将公式\ref{eq_feature2mesh}中的$\bm{f}$替换为$\bm{f_w}=\bm{Intp}(\bm{w})$，
 并将插值权重$\bm{w}$也作为优化变量，
-以用户指定的控制点作为静止点，
+以用户指定的控制点的目标位置作为静止点位置，
 就能得到修改模型形状的优化问题：
 \begin{equation}
+    \label{eq_edit_optm}
     \bm{x}=arg\ \min_{\bm{x},\bm{w}}
     \|
-        \bm{\widetilde{G}x}
+        \widetilde{\bm{G}}\bm{x} 
         -
-        (\bm{Intp}(\widetilde{\bm{f}})+\bm{c}) 
+        (\widetilde{\bm{f}}_{\bm{w}}+\bm{c}) 
     \|
 \end{equation}
+控制点权重$\lambda_c$影响$\bm{G_c}$与$\bm{c}$的值，
+用来控制控制点对模型形状的控制强度。
+当$\lambda_c$较大时，形变后的结果会更接近控制点的指定位置，
+但可能会脱离形变子空间；
+当$\lambda_c$较小时，形变后的结果会尽可能保持在形变子空间内，
+但可能会离控制点的指定位置较远。
+\subsection{优化问题的求解}
+公式\ref{eq_edit_optm}中的优化问题是一个非线性最小二乘问题，
+可用迭代的高斯牛顿法求解。
+
+首先，本文先将关于权重的非线性函数$\bm{f_w}=\bm{Intp}(\bm{w})$线性化：
+\begin{equation}
+    \bm{Intp}(\bm{w}+\bm{\delta})
+    =
+        \bm{Intp}(\bm{w})
+        +
+        \frac
+            {\mathrm{d} \bm{Intp}(\bm{w})}
+            {\mathrm{d} \bm{w}} 
+        \bm{\delta}
+\end{equation}
+其中
+$
+\frac
+    {\mathrm{d} \bm{Intp}(\bm{w})}
+    {\mathrm{d} \bm{w}} 
+$
+为特征向量$\bm{f_w}$关于权重的偏导。
+对公式\ref{eq_intp}求偏导可得
+\begin{eqnarray}
+    \frac
+        {\mathrm{d} \bm{Intp}(\bm{w})}
+        {\mathrm{d} w_k}
+    &=&
+    \exp (\sum_{i=1}^{l}w_i\log(\bm{R_{ij}}))
+    \log(\bm{R_{kj}})\sum_{i=1}^{l}w_i\bm{S_{ij}} \nonumber \\
+    &+&
+    \exp(\sum_{i=1}^{l}w_i\log(\bm{R_{ij}}))
+\end{eqnarray}
+线性化后的优化问题并不直接优化权重$\bm{w}$，
+而是优化权重的增量$\bm{\delta}$
+:
+\begin{eqnarray}
+    \label{eq_edit_optm_final}
+    \bm{x_{t+1}},\bm{\delta_t}
+    &=&
+    arg \min
+    \|
+    \widetilde{\bm{G}}\bm{x}
+        -
+        \frac
+            {\mathrm{d} \bm{Intp}(\bm{w_t})}
+            {\mathrm{d} \bm{w}} 
+        \bm{\delta}
+        -
+        (
+            \bm{Intp}(\bm{w_t})
+            +
+            \bm{c}
+        )
+    \|
+    \nonumber \\
+    \bm{w_{t+1}}
+    &=&
+    \bm{w_t}+\bm{\delta_t}
+\end{eqnarray}
+公式\ref{eq_edit_optm_final}中的优化问题可以看做一个线性最小二乘问题：
+\begin{eqnarray}
+    \label{eq_edit_optm_final}
+    \begin{bmatrix}
+        \bm{x_{t+1}}\\
+        \bm{\delta_t}
+    \end{bmatrix}
+    &=&
+    arg \min
+    \|
+        \bm{A}
+        \begin{bmatrix}
+            \bm{x}\\
+            \bm{\delta}
+        \end{bmatrix}
+        -
+        \widetilde{\bm{c}}
+    \|
+    \nonumber \\
+    \bm{A}
+    &=&
+    \begin{bmatrix}
+        \bm{\widetilde{G}_d} &        &                     &|&   -\bm{J_1}\\ 
+         &       \bm{\widetilde{G}_d} &                     &|&   -\bm{J_2}\\ 
+         &       &                  \bm{\widetilde{G}_d}    &|&   -\bm{J_3}
+    \end{bmatrix}\\
+    \nonumber \\
+    \widetilde{\bm{c}}
+    &=&
+    \bm{Intp}(\bm{w_t})
+    +
+    \bm{c}
+\end{eqnarray}
+其中$\bm{J_1}$、$\bm{J_2}$、$\bm{J_3}$由雅克比矩阵
+$\frac
+    {\mathrm{d} \bm{Intp}(\bm{w_t})}
+    {\mathrm{d} \bm{w}}
+$
+按照相应的坐标拆分而成。
+这个线性最小二乘问题的常规方程（normal equation）如下： 
+\begin{equation}
+    \bm{A}^T\bm{A}
+    \begin{bmatrix}
+        \bm{x}\\
+        \bm{\delta}
+    \end{bmatrix}
+    =
+    \bm{A}^T\widetilde{\bm{c}}
+\end{equation}
+该方程的解将用来增量式的更新$\bm{x_{t+1}}$和$\bm{\delta}$。
 \section{本章小结}
+
+本章介绍了基于形变梯度的形变子空间的构建及其在模型形状修改中的应用。
+首先，本章介绍了形变梯度的概念，推导了三角面片的形变梯度的求解过程；
+然后本章定义了形变三角网格模型上的基于形变梯度的特征向量，
+并给出了特征向量的非线性插值方法；
+由基向量张成的空间为模型的特征空间特征空间对于的形变模型的集合即为模型的形变子空间；
+最后，本章描述了一种基于形变子空间修改模型形状的方法。
