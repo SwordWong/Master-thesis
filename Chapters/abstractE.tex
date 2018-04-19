@@ -1,6 +1,6 @@
 \begin{englishabstract}
 
-3d models deformation techniques have been the subject of many studies,
+3d deformation techniques have been the subject of many studies,
 these technologies are also widely used in the animation and game.
 With the popularity of consumer-level depth cameras, 
 more and more research and application based on depth camera has appeared.
@@ -11,23 +11,23 @@ we implement the pipeline of 3d reconstruction,
  object pose estimation, deformation capture and deformation subspace construction.
  The modification method based on subspace ensures that the modified models conform to the deformation properties of the object.
  Our pipeline can be divided into four steps:
- Firstly, we scan the object and reconstruct the 3d model.
+ First of all, we scan the object and reconstruct the 3d model.
  Then we will take the RGBD image as input, 
- according to the operator's hand information to segment the part belonging to object from the depth image, 
+ according to the operator's hand position to segment the part belonging to object from the input image, 
  and estimate the initial pose of the object.
  This step can be regarded as the pretreatment of deformation capture.
  Then we will use the depth video as the input, 
  describe the deformation of the model with a deformation graph based on the dual quaternion, 
  capture the deformation of the object by optimizing the deformation graph parameters, 
- and select representative deformation state as a deformation keyframes.
- Finally, we extract the feature vectors based on the deformation gradients from the deformation keyframes, 
+ and pick representative deformation state as a deformation keyframes.
+ Finally, we extract the feature vectors based on deformation gradient from these deformation keyframes, 
  and use these feature vectors as the basis vectors to span the nonlinear feature space. 
  The deformed model corresponding to the feature vectors in the feature space constitutes the deformation subspace of the model.
  In addition, 
- we also give a shape modification method based on the deformation subspace to ensure that the modified model falls within the deformation subspace.
+ we also give a shape modification method based on the subspace to ensure that the modified model falls within the subspace.
 
  Because 3d models and deformation keyframes are all obtained by capturing the surface information of the object with an RGBD camera, 
- and are not obtained through manual editing, 
+ not obtained through manual editing, 
  it is to ensure that the static 3d model and the deformation keyframes are consistent with the properties of the object. 
  Therefore, the resulting deformation subspace is reasonable.
 

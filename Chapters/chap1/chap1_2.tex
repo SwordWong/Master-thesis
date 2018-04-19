@@ -1,7 +1,7 @@
 
 \section{本文工作}
-本文借助了深度相机，以深度视频作为输入，
-完成了一个从三维模型重建、模型形变捕捉到模型形变子空间构建的流程。
+本文借助了深度相机，以RGBD视频作为输入，
+完成了一个从三维模型重建、位姿估计、模型形变捕捉到模型形变子空间构建的流程。
 深度视频由按照时间顺序排列的深度图像构成。
 与普通的图像不同，深度图像将场景中采样点距图像采集器的距离，即深度，作为其像素值，
 它能够直观的描述场景的几何信息。
@@ -15,7 +15,12 @@
 在重建的步骤中，本文用体素描述三维模型，并根据每一帧深度图像更新体素的值。
 体素模型可通过Matching Cubes\cite{lorensen1987marching}算法转换为三角网格模型。
 
-在获得了物体的静态三维模型后，本文需要用户摆弄物体使之发生形变，
+在形变捕捉之前，本文需要估计物体的初始位姿。
+本文首先从由RGBD图片生成的点云中分割出手部点云，
+再通过手部点云的位置分割出物体的点云。
+最后通过让网格模型与物体点云对齐估计出物体的初始位姿作为形变捕捉的初始位姿。
+
+在获得了物体的静态三维模型和初始位姿后，本文需要用户摆弄物体使之发生形变，
 并利用深度相机捕捉物体的形变，得到模型的形变关键帧。
 在形变捕捉阶段，本文以静态三维模型与记录了物体形变过程的深度视频作为算法的输入，
 得到一组形变后的模型作为该模型的形变关键帧。
@@ -31,3 +36,36 @@
 使得求解得到的模型形状和特征向量对应的形状尽可能接近。
 由于形变关键帧是通过捕捉现实中物体的形变得到，所以所有的形变关键帧都是合理的，
 由关键向量张成的形变子空间也是较为合理的。
+
+算法\ref{alg_main_alg}是算法整体流程的伪代码。
+其中第1行至第6行为三维重建的流程，将在第三章详细描述；
+第7行至第10行为初始位姿估计流程，将在第四章详细描述；
+第11行至第16行为形变捕捉与形变关键帧提取的流程，将在第五章详细描述；
+第17至第20行为形变子空间构建的流程，将在第六章详细描述。
+\begin{algorithm}
+    %\fangsong
+    \caption{本文算法流程}
+    \label{alg_main_alg}
+    \begin{algorithmic}[1]
+        \For{each time $t$}
+            \State Get depth frame
+            \State Estimate the camera pose
+            \State Fuse depth data into the global volume
+        \EndFor
+        \State Fetch mesh from the global volume
+        \State Get RGBD frame for initial pose estimating
+        \State Segment the hand point cloud
+        \State Segment the object point cloud
+        \State Match the mesh to the object point cloud to get the  initial pose
+        \For{each time $t$}
+            \State Get depth frame
+            \State Optimize deformation parameters
+        \EndFor
+        \State Select representative deformation keyframes
+        \State Align keyframes to the initial mesh
+        \For{each keyframes}
+            \State Fetch feature vector from keyframe
+        \EndFor
+        \State Build subspace with feature vectors
+    \end{algorithmic}
+\end{algorithm} 

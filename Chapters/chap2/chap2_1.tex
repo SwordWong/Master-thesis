@@ -11,7 +11,7 @@ Apple的iPhone X\cite{apple_iphoneX}、Intel的RealSense\cite{intel_realsense}�
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.95\textwidth]{./Pictures/ARKit.eps}
-    \caption{Apple ARKit}
+    \caption{Apple ARKit（引自https://developer.apple.com/arkit/）}
     \label{arkit}
 \end{figure}
 
@@ -27,16 +27,22 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 \subsection{飞行时间测距}
 飞行时间测距，又称为激光雷达(LiDAR)测距法。Microsoft的Kinect二代(图\ref{kinect_v1_v2}右)采用的就是飞行时间测距技术。
 激光发射器会将激光脉冲投射到物体表面，相应的传感器会接收物体表面反射的激光信号，
-控制器就会根据信号传播所消耗的时间计算出相应监测点和传感器的距离。但由于光速(\(299792458 m/s\))非常快，
-直接测量飞行时间是不现实的。例如测量1m的距离，飞行时间为\(1/299792458 \times 2\)s，
+控制器就会根据信号传播所消耗的时间计算出相应监测点和传感器的距离。但由于光速(\(2.998 \times 10^8 m/s\))非常快，
+直接测量飞行时间是不现实的。例如测量1m的距离，飞行时间为\(1/2.998 \times 10^8 \times 2\)s，
 相机的采集平率需达到\(1.5 \times 10^8\)Hz，这个是硬件很难达到的。
-因此，基于飞行时间的设备会发射固定频率调制的正弦光波，摄像头同步摄像头同步拍摄多帧反射图像，
+因此，基于飞行时间的设备会发射固定频率调制的正弦光波，摄像头同步拍摄多帧反射图像，
 根据每个像素亮度的变化规律计算反射光的相位差。
 相位差再乘以光速就得到了像素的距离，如图\ref{tof}。
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.7\textwidth]{./Pictures/TOF.eps}
-    \caption{ToF测距原理}
+    \includegraphics[width = 0.6\textwidth]{./Pictures/TOF.eps}
+    \caption{
+        ToF测距原理（引自https://www.spiedigitallibrary.org/）
+            % \footnote{
+            %     Performance evaluation of time-of-flight and structured light depth sensors in radiometric/geometric variations：
+            %     https://www.spiedigitallibrary.org/journals/Optical-Engineering/volume-51/issue-9/094401/Performance-evaluation-of-time-of-flight-and-structured-light-depth/10.1117/1.OE.51.9.094401.full?SSO=1
+            % }
+        }
     \label{tof}
 \end{figure}
 
@@ -49,7 +55,7 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 \begin{figure}[h]
     \centering
     \includegraphics[width = 0.8\textwidth]{./Pictures/kinect_v1_v2.eps}
-    \caption{Kinect一代（左）与Kinect二代（右）}
+    \caption{Kinect一代（左）与Kinect二代（右）引自（https://en.wikipedia.org/wiki/Kinect）}
     \label{kinect_v1_v2}
 \end{figure}
 
@@ -61,10 +67,10 @@ IMU(Inertial Measurement Unit，惯性测量单元)，如Apple的ARKit\cite{appl
 结构光投射到待测物表面后被待测物的高度调制，被调制的结构光经摄像系统采集，
 传送至计算机内分析计算后可得出被测物的三维面形数据。
 以光栅调制为例，光源将正弦条纹投影至被测物，相机会捕捉物体表面形变后的条纹。
-调节形变后的条纹会得到个点的相位，相位则可以进一步转换为距离信息，如图\ref{str_lighting}。
+调节形变后的条纹会得到每个点的相位，相位则可以进一步转换为距离信息，如图\ref{str_lighting}。
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.7\textwidth]{./Pictures/str_lighting.eps}
-    \caption{结构光原理}
+    \includegraphics[width = 0.6\textwidth]{./Pictures/str_lighting.eps}
+    \caption{结构光原理，引自（https://www.zhihu.com/question/54347759/answer/177870402，来自Anhui Univ Opt Lab）}
     \label{str_lighting}
 \end{figure}

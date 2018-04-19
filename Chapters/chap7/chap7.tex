@@ -48,8 +48,11 @@
     \end{tabular}
 \end{table}
  \section{初始位姿估计结果}\label{sec_pose_est_res} 
- 图\ref{align_result}展示了样例giraffe在物体的不同位姿下的对齐结果。
- 图中每一列分别为一种物体的位姿；
+ 图\ref{align_result}展示了各样例的对齐结果。
+ 其中前两列为giraffe在两种不同位姿下的估计结果，
+ 第三列为pillow的估计结果，
+ 第四列为tube的估计结果。
+ 图中每一列为每一种位姿下位姿估计算法的结果；
  第一行为手部点云分割的结果，
  蓝色的像素为分割出的手部点云;
  第二行为物体点云分割的结果，
@@ -70,7 +73,7 @@
  所以模型初始位姿中这些偏移不会对后续的算造成影响。
  \begin{figure}
     \centering
-    \includegraphics[width = \textwidth]{./Pictures/align_6result.png}
+    \includegraphics[width = \textwidth]{./Pictures/align_result_muti_model.png}
     \caption{不同位姿下的位姿估计结果}
     \label{align_result}
 \end{figure}
@@ -128,6 +131,15 @@
 在形变捕捉步骤中，
 本文捕捉每一帧中物体发生的形变，
 算法的FPS在8至12之间。
+样例giraffe的形变捕捉的结果已经在图\ref{deformation_sampling_demo}中展示，
+样例pillow和tube的形变捕捉结果在图\ref{ds_p_t}中展示。
+\begin{figure}
+    \centering
+    \includegraphics[width = \textwidth]{./Pictures/ds_p_t.png}
+    \caption{样例pillow和tube的形变捕捉结果}
+    \label{ds_p_t}
+\end{figure}
+
 本文采用了通用的形变描述方式，
 并不需要形变的物体属于特定的类型，
 如人手、人脸等。
@@ -136,7 +148,7 @@
 这些关键帧都会根据手部覆盖的区域对齐，消除冗余的刚体变换分量。
 样例giraffe的形变关键帧，
 以及对齐的结果以及在图\ref{before_after_align}和图\ref{align_area}中展示，
-图\ref{pillow_tube_keyframe}展示了样例pillow和tube的形变关键帧。
+图\ref{pillow_tube_keyframe}展示了样例pillow和tube的形变关键帧和对齐后的结果。
 第一行为pillow提取关键帧的结果，
 第二行为tube提取关键帧的结果；
 每行的第一张为未形变的模型，
@@ -167,7 +179,7 @@ giraffe为长颈鹿形的毛绒玩具，pillow为小枕头，tube为塑料水管
 它由每个面片的形变形变梯度，即仿射变换中的非平移部分组成。
 当对特征向量做插值并不是直接插值顶点的位置，
 而是插值面片的变换。
-所以本文中的特征向量插值不仅可以内插（$0 \lneq w \lneq 1$），
+所以本文中的特征向量插值不仅可以内插（$0 \leq w \leq 1$），
 在外插（$w<0$或$w>1$）时依然能得到较好的结果。
 图\ref{extrapolation}展示了各个样例上做内插和外插的结果。
 图中的每一列分别为插值权重$w$的值分别为1.3、1、0.5、0、-0.5、-1、-1.3时的插值结果。
@@ -196,16 +208,17 @@ $\lambda_c$的值就决定了形状修改时的倾向。
 当$\lambda_c$的值较大的时候，
 形变修改的结果更倾向于与让模型的形状更接近控制点。
 图\ref{edit_result}展示了利用形变子空间形状修改得到的形变模型，
+每幅图片下方的向量为各基向量的插值权重。
 可以看出基于形变子空间的形状修改可以得到复杂而自然的形变结果。
 \begin{figure}
     \centering
-    \includegraphics[width = 0.7\textwidth]{./Pictures/different_lambda.png}
+    \includegraphics[width = 0.85\textwidth]{./Pictures/different_lambda.png}
     \caption{$\lambda_c=1/10/50/100$时形状修改的结果}
     \label{different_lambda}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width = 0.7\textwidth]{./Pictures/edit_result_p_only.png}
+    \includegraphics[width = 0.85\textwidth]{./Pictures/edit_result.png}
     \caption{通过模型修改得到的形变模型}
     \label{edit_result}
 \end{figure}
